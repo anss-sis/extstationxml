@@ -1402,7 +1402,8 @@ def parse(inFileName, isExtStaXml = True):
         if uri in insd:
             docnsprefixmap[k] = insd[uri]
         else:
-            raise SISError(f'Warning: Unknown/unexpected namespace. Prefix:{k}, uri: {uri}')
+            docnsprefixmap[k] = k
+            print (f'Warning: Unknown/unexpected namespace: {k}: {uri}. Elements in this namespace will be ignored.')
     if isExtStaXml:
         obj = SISRootType()
     else:
