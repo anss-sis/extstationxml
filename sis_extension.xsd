@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- sis_extension.xsd version 3.0
+<!-- sis_extension.xsd version 3.1
 
     2014-12-15 Prabha Acharya
         Major revision - version 2.0. Not backward compatible.
@@ -42,12 +42,18 @@
           Changed ResponseDictType: removed minoccurs=0 for choices to prevent empty ResponseDict element
           Changed CalResponseDetailType: removed minoccurs=0 for choices to prevent empty CalResponseDetail element
           Added optional element IPAddress of type IPAddressType to EquipBase 
+    2023-10-12 version 3.1 Prabha Acharya
+          Changed targetNamespace URI to http://anss-sis.scsn.org/xml/ext-stationxml/3.1
+          Added xml schema version vc:minVersion 1.1
+          Added ComponentNameType with an optional attribute modelName
+          Under EquipmentLink and ComponentType changed element ComponentName from string to ComponentNameType
 -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0" elementFormDefault="qualified"
-    targetNamespace="http://anss-sis.scsn.org/xml/ext-stationxml/3.0"
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" version="3.1" elementFormDefault="qualified"
+    targetNamespace="http://anss-sis.scsn.org/xml/ext-stationxml/3.1" 
     xmlns:fsx="http://www.fdsn.org/xml/station/1"
-    xmlns:sis="http://anss-sis.scsn.org/xml/ext-stationxml/3.0">
-    <xs:import schemaLocation="fdsn-station-1.1.xsd" namespace="http://www.fdsn.org/xml/station/1"/>
+    xmlns:sis="http://anss-sis.scsn.org/xml/ext-stationxml/3.1"
+    xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" vc:minVersion="1.1">
+    <xs:import schemaLocation="http://www.fdsn.org/xml/station/fdsn-station-1.1.xsd" namespace="http://www.fdsn.org/xml/station/1"/>
     <xs:complexType name="RootType">
         <xs:complexContent>
             <xs:extension base="fsx:RootType">
@@ -388,7 +394,7 @@
                             <xs:element name="SerialNumber" type="xs:string"/>
                             <xs:element name="ModelName" type="xs:string"/>
                             <xs:element name="Category" type="xs:string"/>
-                            <xs:element name="ComponentName" type="xs:string"/>
+                            <xs:element name="ComponentName" type="sis:ComponentNameType"/>
                             <xs:element name="CalibrationDate" type="xs:dateTime" minOccurs="0"/>
                             <xs:element name="AtoDDelay" type="fsx:DecimationType" minOccurs="0"/>
                         </xs:sequence>
@@ -837,14 +843,9 @@
         </xs:documentation>
         </xs:annotation>
         <xs:sequence>
-            <xs:element name="ComponentName" type="xs:string">
+            <xs:element name="ComponentName" type="sis:ComponentNameType">
                 <xs:annotation>
-                    <xs:documentation>Name for each component of an instrument. This has to be unique for each instrument.
-                        Values for sensors: X, Y, Z, MASS-POSITION1, MASS-POSITION2, MASS-POSITION3, VERTICAL, HORIZONTAL, COMPONENT1 ... COMPONENTn
-                        For loggers: DATA1 ...  DATAn, MASS-POSITION1 ... MASS-POSITIONn, AUX1… AUXn, SERIAL … SERIALn
-                        For other equipment: COMPONENT1 ... COMPONENTn
-                        Check the SIS website for the latest list. New ones will not be added by the XML.
-                    </xs:documentation>
+                    <xs:documentation>Name for each component of an instrument. This has to be unique for each instrument.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="Calibration" type="sis:CalibrationType" maxOccurs="unbounded">
@@ -870,6 +871,23 @@
             </xs:element>
         </xs:sequence>
     </xs:complexType>
+    <xs:complexType name="ComponentNameType">
+        <xs:annotation>
+            <xs:documentation>
+                Values for sensors: X, Y, Z, MASS-POSITION1, MASS-POSITION2, MASS-POSITION3, VERTICAL, HORIZONTAL, COMPONENT1 ... COMPONENTn
+                   For multisensors provide internal sensor name in attribute modelName, else leave out the attribute.
+                For loggers: DATA1 ...  DATAn, MASS-POSITION1 ... MASS-POSITIONn, AUX1… AUXn, SERIAL … SERIALn
+                For other equipment: COMPONENT1 ... COMPONENTn
+                Check the SIS website for the latest list. 
+            </xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="modelName" type="xs:string" use="optional"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+    
     <xs:complexType name="LoggerPackageType">
         <xs:annotation>
             <xs:documentation>
