@@ -1,12 +1,12 @@
 #! /usr/bin/python
 
 '''
-sisxmlparser3_0.py
-2020-05-28
+sisxmlparser.py v3.1
+2023-10-12
 
 This module contains classes to parse an XML document in the extended
-FDSNStationXML format as defined in sis_extension.xsd (v3.0)
-http://anss-sis.scsn.org/xml/ext-stationxml/3.0/sis_extension.xsd and convert
+FDSNStationXML format as defined in sis_extension.xsd (v3.1)
+http://anss-sis.scsn.org/xml/ext-stationxml/3.1/sis_extension.xsd and convert
 it into python objects. This can be output as an XML file or as a python
 dictionary.
 
@@ -42,7 +42,7 @@ Namespace_extract_pat_ = re_.compile(r'{(.*)}(.*)')
 # nskey: (namespaceuri, prefix in output, schemalocation, schemaversion)
 nsd = {'xsi' : ('http://www.w3.org/2001/XMLSchema-instance', 'xsi', '', ''),
        'fsx' : ('http://www.fdsn.org/xml/station/1','', 'http://www.fdsn.org/xml/station/fdsn-station-1.1.xsd', '1.1'),
-       'sis' : ('http://anss-sis.scsn.org/xml/ext-stationxml/3.0', 'sis', 'https://anss-sis.scsn.org/xml/ext-stationxml/3.0/sis_extension.xsd', '3.0')
+       'sis' : ('http://anss-sis.scsn.org/xml/ext-stationxml/3.1', 'sis', 'https://anss-sis.scsn.org/xml/ext-stationxml/3.1/sis_extension.xsd', '3.1')
       }
 
 insd = dict((v[0], k) for k, v in nsd.items())
@@ -812,11 +812,15 @@ class ResponseType(SISBase):
     ATTRIBS = SISBase.ATTRIBS + (('resourceId', 'text', False, False),)
     NS = 'fsx'
 
+class ComponentNameType(SISSimpleType):
+    ATTRIBS = SISSimpleType.ATTRIBS + (('modelName', 'text', False, False),)
+    NS = 'sis'
+
 class EquipmentLinkType(SISBase):
     ELEMS = (('SerialNumber', 'text', True, False),
             ('ModelName', 'text', True, False),
             ('Category', 'text', True, False),
-            ('ComponentName', 'text', True, False),
+            ('ComponentName', ComponentNameType, True, False),
             ('CalibrationDate', 'date', False, False),
             ('AtoDDelay', DecimationType, False, False),
             )
@@ -892,6 +896,27 @@ class SISResponseType(ResponseType):
     EXTNS = 'sis'
     EXTTYPE = 'ResponseType' # Use EXTNS:EXTTYPE to set the value for xsi:type
     SUPERCLASS = ResponseType
+
+class NRLSensitivityType(SensitivityType):
+    ELEMS = GainType.ELEMS + (('InputUnits', UnitsType, False, False),
+            ('OutputUnits', UnitsType, False, False),
+            ('FrequencyStart', 'double', False, False),
+            ('FrequencyEnd', 'double', False, False),
+            ('FrequencyDBVariation', 'double', False, False),
+            )
+    EXTNS = 'nrl'
+    EXTTYPE = 'SensitivityType' # Use EXTNS:EXTTYPE to set the value for xsi:type
+    SUPERCLASS = SensitivityType
+
+class NRLResponseType(ResponseType):
+    ELEMS = (('InstrumentSensitivity', NRLSensitivityType, False, False),
+                ('InstrumentPolynomial', PolynomialType, False, False),
+                ('Stage', ResponseStageType, False, True),
+            )
+    EXTNS = 'nrl'
+    EXTTYPE = 'ResponseType' # Use EXTNS:EXTTYPE to set the value for xsi:type
+    SUPERCLASS = ResponseType
+
 
 class SensorOffsetType(SISBase):
     ELEMS = (('NorthOffset', 'double', False, False),
@@ -1264,7 +1289,7 @@ class CalibrationType(SISBase):
 
 
 class ComponentType(SISBase):
-    ELEMS = (('ComponentName', 'text', True, False),
+    ELEMS = (('ComponentName', ComponentNameType, True, False),
                 ('Calibration', CalibrationType, True, True),
                 ('NumberOfAtoDBits', 'integer', False, False),
                 ('MaxAtoDCount', 'integer', False, False),
@@ -1385,12 +1410,12 @@ class SISRootType(RootType):
             setattr(self, 'xmlns:sis', nsd['sis'][0])
 
 def parseFdsnStaXml(inFileName):
-    return parse(inFileName, isExtStaXml = False)
+    return parse(inFileName, xmltype='fdsn')
 
 def parseExtStaXml(inFileName):
-    return parse(inFileName, isExtStaXml = True)
+    return parse(inFileName, xmltype='sis')
 
-def parse(inFileName, isExtStaXml = True):
+def parse(inFileName, xmltype='sis'):
     ''' Inputs: xmlfile to be parsed and indicate whether it is ExtStaXML or FDSNStatioNXML
     Returns a python object with data from the xmlfile'''
     global docnsprefixmap
@@ -1404,10 +1429,12 @@ def parse(inFileName, isExtStaXml = True):
         else:
             docnsprefixmap[k] = k
             print (f'Warning: Unknown/unexpected namespace: {k}: {uri}. Elements in this namespace will be ignored.')
-    if isExtStaXml:
+    if xmltype == 'sis':
         obj = SISRootType()
-    else:
+    elif xmltype == 'fdsn':
         obj = RootType()
+    elif xmltype == 'resp':
+        obj = NRLResponseType()
 
     obj.build(root)
     obj.validate()
@@ -1415,22 +1442,17 @@ def parse(inFileName, isExtStaXml = True):
 
 
 def main():
-
-    parser = argparse.ArgumentParser(description='Parse / export FDSNStationXML1.1 or ExtStationXML3.0')
+    parser = argparse.ArgumentParser(description='Parse / export FDSNStationXML1.1 or ExtStationXML3.1 or IRIS NRL stationxml-resp files')
     parser.add_argument('xmlfile', type=str,
                         help='Name of file to be parsed')
-    parser.add_argument('--xmltype', choices=['sis', 'fdsn'], default='sis',
-                        help='Use "sis" for ExtStationXML and "fdsn" for FDSNStationXML')
+    parser.add_argument('--xmltype', choices=['sis', 'fdsn', 'resp'], default='sis',
+                        help='Use "sis" for ExtStationXML, "fdsn" for FDSNStationXML, or "resp" for IRIS NRL stationxml-resp files')
 
     parser.add_argument('--ignorewarning', action='store_true', default=False)
 
     options = parser.parse_args()
-    if options.xmltype == 'sis' :
-        isExt = True
-    else:
-        isExt = False
     # Parse an xml file
-    obj = parse(options.xmlfile, isExt)
+    obj = parse(options.xmlfile, options.xmltype)
 
     # Export xml
     obj.exportxml(sys.stdout, ignorewarning=options.ignorewarning)
@@ -1446,5 +1468,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
