@@ -601,7 +601,7 @@ class BaseFilterType(SISBase):
              ('InputUnits', UnitsType, False, False),
              ('OutputUnits', UnitsType, False, False),
             )
-    ATTRIBS = SISBase.ATTRIBS + (('resourceid', 'text', False, False),
+    ATTRIBS = SISBase.ATTRIBS + (('resourceId', 'text', False, False),
                ('name', 'text', False, False),
                )
     NS = 'fsx'
