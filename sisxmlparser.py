@@ -1214,9 +1214,9 @@ class IPv4AddressType(SISSimpleType):
     '''
     This is a SimpleType node
     '''
-    ELEMS = (('ValueOf', 'string', True, False),)
-    ATTRIBS = SISSimpleType.ATTRIBS + (('networkMask', 'string', False , False),
-                ('gatewayAddress', 'string', False , False),
+    ELEMS = (('ValueOf', 'text', True, False),)
+    ATTRIBS = SISSimpleType.ATTRIBS + (('networkMask', 'text', False , False),
+                ('gatewayAddress', 'text', False , False),
               )
     NS = 'sis'
 
@@ -1224,9 +1224,9 @@ class IPv6AddressType(SISSimpleType):
     '''
     This is a SimpleType node
     '''
-    ELEMS = (('ValueOf', 'string', True, False),)
+    ELEMS = (('ValueOf', 'text', True, False),)
     ATTRIBS = SISSimpleType.ATTRIBS + (('prefixLength', 'integer', False , False),
-                ('gatewayAddress', 'string', False , False),
+                ('gatewayAddress', 'text', False , False),
               )
     NS = 'sis'
 
@@ -1468,3 +1468,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
